@@ -1,0 +1,31 @@
+name: Rendering bug
+description: Report incorrect direction, shaping, wrapping, or extraction
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Logical input
+      description: Use synthetic text in a code block. Never attach private documents.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Current and expected output
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Language, script, and font
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: rtl-pdf and Node.js versions
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal reproduction
+    validations:
+      required: true

@@ -1,0 +1,83 @@
+{
+  "name": "rtl-pdf",
+  "version": "0.1.0",
+  "description": "Standards-based RTL and mixed-direction PDF generation for JavaScript",
+  "homepage": "https://github.com/aland-omed/rtl-pdf#readme",
+  "bugs": "https://github.com/aland-omed/rtl-pdf/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aland-omed/rtl-pdf.git"
+  },
+  "keywords": [
+    "rtl",
+    "pdf",
+    "arabic",
+    "kurdish",
+    "persian",
+    "farsi",
+    "urdu",
+    "hebrew",
+    "bidi",
+    "right-to-left",
+    "pdfkit",
+    "document-generation"
+  ],
+  "license": "MIT",
+  "author": "Aland <158173939+aland-omed@users.noreply.github.com>",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "check": "npm run typecheck && npm run test && npm run build && npm run pack:check",
+    "example": "tsx examples/mixed-document.ts",
+    "pack:check": "publint && attw --pack",
+    "test": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bidi-js": "1.0.3",
+    "pdfkit": "0.19.1"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@expo-google-fonts/noto-sans-arabic": "^0.4.3",
+    "@types/pdfkit": "^0.17.3",
+    "@vitest/coverage-v8": "^3.2.4",
+    "pdfjs-dist": "^5.4.149",
+    "publint": "^0.3.12",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

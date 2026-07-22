@@ -1,0 +1,19 @@
+name: Feature request
+description: Propose a document primitive, language fixture, or integration
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: Problem and real-world use case
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed API or output
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Standards and references
+      description: Link Unicode, W3C, PDF, or language-specific guidance where applicable.
