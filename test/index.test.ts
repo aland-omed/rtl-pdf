@@ -65,7 +65,7 @@ describe("createPdf", () => {
     expect(source).toContain("/ActualText");
     expect(source).toContain("(RTL PDF test)");
     expect(source).toContain("(Aland)");
-    expect(content.indexOf(asUtf16Be(text))).toBeGreaterThan(-1);
+    expect(readActualText(content)).toContain(text);
   });
 
   it("wraps long text and adds pages without clipping", async () => {
@@ -87,8 +87,49 @@ describe("createPdf", () => {
   });
 });
 
-function asUtf16Be(value: string): Buffer {
-  const encoded = Buffer.from(value, "utf16le");
-  encoded.swap16();
-  return Buffer.concat([Buffer.from([0xfe, 0xff]), encoded]);
+function readActualText(pdf: Buffer): string[] {
+  const marker = Buffer.from("/ActualText ");
+  const values: string[] = [];
+  let searchFrom = 0;
+
+  while (true) {
+    const markerAt = pdf.indexOf(marker, searchFrom);
+    if (markerAt === -1) return values;
+    const openAt = pdf.indexOf(0x28, markerAt + marker.length);
+    if (openAt === -1) return values;
+
+    const bytes: number[] = [];
+    let depth = 1;
+    let index = openAt + 1;
+    for (; index < pdf.length && depth > 0; index++) {
+      const byte = pdf[index]!;
+      if (byte === 0x5c) {
+        const escaped = pdf[++index]!;
+        const named = new Map([
+          [0x6e, 0x0a],
+          [0x72, 0x0d],
+          [0x74, 0x09],
+          [0x62, 0x08],
+          [0x66, 0x0c],
+        ]);
+        if (named.has(escaped)) bytes.push(named.get(escaped)!);
+        else if (escaped === 0x0d && pdf[index + 1] === 0x0a) index++;
+        else if (escaped !== 0x0a && escaped !== 0x0d) bytes.push(escaped);
+        continue;
+      }
+      if (byte === 0x28) depth++;
+      if (byte === 0x29 && --depth === 0) break;
+      bytes.push(byte);
+    }
+
+    const encoded = Buffer.from(bytes);
+    if (encoded[0] === 0xfe && encoded[1] === 0xff) {
+      const utf16 = Buffer.from(encoded.subarray(2));
+      utf16.swap16();
+      values.push(utf16.toString("utf16le"));
+    } else {
+      values.push(encoded.toString("latin1"));
+    }
+    searchFrom = index;
+  }
 }
