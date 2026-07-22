@@ -3,6 +3,7 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,6 +20,26 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
           cache: npm
+      - name: Read package metadata
+        id: package
+        shell: bash
+        run: |
+          echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Check whether this version is already published
+        id: registry
+        shell: bash
+        run: |
+          if npm view "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
       - run: npm ci
       - run: npm run check
-      - run: npm publish
+      - name: Publish to npm
+        if: steps.registry.outputs.published != 'true'
+        run: npm publish
+      - name: Confirm existing npm release
+        if: steps.registry.outputs.published == 'true'
+        run: npm view "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" version
