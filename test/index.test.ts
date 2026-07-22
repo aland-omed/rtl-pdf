@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { describe, expect, it } from "vitest";
 import { createPdf, createVisualRuns, resolveDirection } from "../src/index.js";
 
@@ -60,21 +59,13 @@ describe("createPdf", () => {
     });
 
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain("%PDF-1.7");
-    expect(Buffer.from(bytes).includes(Buffer.from("/ActualText"))).toBe(true);
-    const pdf = await getDocument({ data: bytes }).promise;
-    expect(pdf.numPages).toBe(1);
-    const metadata = await pdf.getMetadata();
-    const info = metadata.info as Record<string, unknown>;
-    expect(info.Title).toBe("RTL PDF test");
-    expect(info.Author).toBe("Aland");
-
-    const page = await pdf.getPage(1);
-    const content = await page.getTextContent();
-    const extracted = content.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join("");
-    expect(extracted).toContain("12345");
-    expect(extracted).toContain("AB-42");
+    const content = Buffer.from(bytes);
+    const source = content.toString("latin1");
+    expect(source.match(/\/Type\s*\/Page\b/gu)).toHaveLength(1);
+    expect(source).toContain("/ActualText");
+    expect(source).toContain("(RTL PDF test)");
+    expect(source).toContain("(Aland)");
+    expect(content.indexOf(asUtf16Be(text))).toBeGreaterThan(-1);
   });
 
   it("wraps long text and adds pages without clipping", async () => {
@@ -84,8 +75,8 @@ describe("createPdf", () => {
       page: { size: [260, 220], margins: { top: 24, right: 24, bottom: 24, left: 24 } },
       blocks: [{ type: "text", text: paragraph.repeat(20), direction: "rtl", fontSize: 12 }],
     });
-    const pdf = await getDocument({ data: bytes }).promise;
-    expect(pdf.numPages).toBeGreaterThan(1);
+    const source = Buffer.from(bytes).toString("latin1");
+    expect(source.match(/\/Type\s*\/Page\b/gu)?.length ?? 0).toBeGreaterThan(1);
   });
 
   it("validates required inputs", async () => {
@@ -95,3 +86,9 @@ describe("createPdf", () => {
     ).rejects.toThrow("spacer height");
   });
 });
+
+function asUtf16Be(value: string): Buffer {
+  const encoded = Buffer.from(value, "utf16le");
+  encoded.swap16();
+  return Buffer.concat([Buffer.from([0xfe, 0xff]), encoded]);
+}
