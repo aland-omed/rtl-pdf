@@ -1,5 +1,9 @@
 # rtl-pdf
 
+[![npm version](https://img.shields.io/npm/v/rtl-pdf.svg)](https://www.npmjs.com/package/rtl-pdf)
+[![CI](https://github.com/aland-omed/rtl-pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/aland-omed/rtl-pdf/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/rtl-pdf.svg)](LICENSE)
+
 Standards-based right-to-left and mixed-direction PDF generation for Node.js.
 Create searchable documents containing Arabic, Kurdish, Persian, Urdu, Hebrew,
 Pashto, English, numbers, and product codes without reversing strings.
@@ -58,6 +62,12 @@ const pdf = await createPdf({
       direction: "rtl",
       fontSize: 14,
     },
+    {
+      type: "list",
+      ordered: true,
+      direction: "rtl",
+      items: ["مراجعة تفاصيل الطلب", "تأكيد العنوان AB-42"],
+    },
   ],
 });
 
@@ -93,6 +103,28 @@ Unicode grapheme boundaries instead of UTF-16 code units.
 { type: "rule", color: "#cbd5e1", width: 1 }
 ```
 
+### Lists
+
+```ts
+{
+  type: "list",
+  ordered: true,
+  start: 1,
+  items: [
+    "پشکنینی زانیارییەکانی داواکاری AB-42",
+    "دڵنیابوونەوە لە نرخی 123.45 دۆلار",
+  ],
+  direction: "rtl",
+  fontSize: 14,
+  indent: 28,
+  markerGap: 7,
+}
+```
+
+Ordered and unordered lists automatically place their markers on the correct
+side for each item's resolved direction. Wrapped lines stay aligned with the
+item text, and lists continue across pages.
+
 ### Spacer
 
 ```ts
@@ -127,7 +159,7 @@ PDFKit and fontkit.
 
 - Node.js only in `0.1.x`.
 - A single RTL font and a single LTR font are supported per document.
-- Complex tables, lists, forms, annotations, and tagged PDF/UA structure are not
+- Complex tables, forms, annotations, and tagged PDF/UA structure are not
   implemented yet.
 - PDF viewers differ in how they expose `/ActualText` through text-extraction
   APIs. The logical semantic layer remains embedded in the file.
@@ -150,7 +182,11 @@ The rendered example is written to `output/pdf/rtl-pdf-mixed-example.pdf`.
 ## Contributing
 
 Arabic, Kurdish, Persian, Urdu, Hebrew, Pashto, and typography contributors are
-welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and [ROADMAP.md](ROADMAP.md).
+welcome. Start with the
+[`good first issue`](https://github.com/aland-omed/rtl-pdf/labels/good%20first%20issue)
+and [`help wanted`](https://github.com/aland-omed/rtl-pdf/labels/help%20wanted)
+labels, then see [CONTRIBUTING.md](CONTRIBUTING.md) and [ROADMAP.md](ROADMAP.md).
+For usage questions, see [SUPPORT.md](SUPPORT.md).
 
 ## Security
 

@@ -5,6 +5,7 @@ import type {
   Direction,
   DocumentBlock,
   FontSource,
+  ListBlock,
   PageMargins,
   RtlPdfOptions,
   TextBlock,
@@ -16,6 +17,7 @@ export type {
   DocumentBlock,
   FontSet,
   FontSource,
+  ListBlock,
   PageMargins,
   PdfMetadata,
   RtlPdfOptions,
@@ -104,6 +106,66 @@ export async function createPdf(options: RtlPdfOptions): Promise<Uint8Array> {
       continue;
     }
 
+    if (block.type === "list") {
+      const style = resolveTextStyle(block, options);
+      doc.fontSize(style.fontSize).fillColor(style.color);
+      const indent = block.indent ?? style.fontSize * 1.75;
+      const markerGap = block.markerGap ?? style.fontSize * 0.5;
+      const textWidth = availableWidth() - indent;
+      if (textWidth <= 0) {
+        throw new RangeError("list indent must be smaller than the available page width");
+      }
+      if (markerGap >= indent) {
+        throw new RangeError("list markerGap must be smaller than the list indent");
+      }
+
+      for (let itemIndex = 0; itemIndex < block.items.length; itemIndex++) {
+        const item = block.items[itemIndex]!;
+        const marker = block.ordered ? `${(block.start ?? 1) + itemIndex}.` : "•";
+        const itemDirection = resolveDirection(item, style.direction);
+        const lines = wrapText(doc, item, textWidth, style.direction);
+
+        for (let lineIndex = 0; lineIndex < Math.max(lines.length, 1); lineIndex++) {
+          const line = lines[lineIndex] ?? "";
+          ensureSpace(style.lineHeight);
+          const markerOnRight = itemDirection === "rtl";
+          const textLeft = markerOnRight ? margins.left : margins.left + indent;
+          const markerLeft = markerOnRight
+            ? margins.left + availableWidth() - indent + markerGap
+            : margins.left;
+
+          if (lineIndex === 0) {
+            drawLine(
+              doc,
+              marker,
+              markerLeft,
+              y,
+              indent - markerGap,
+              "ltr",
+              markerOnRight ? "right" : "left",
+            );
+          }
+          if (line.length > 0) {
+            drawLine(
+              doc,
+              line,
+              textLeft,
+              y,
+              textWidth,
+              style.direction,
+              style.align,
+              lineIndex < lines.length - 1 ? `${line} ` : line,
+            );
+          }
+          y += style.lineHeight;
+        }
+
+        if (itemIndex < block.items.length - 1) y += style.lineHeight * 0.2;
+      }
+      y += style.marginBottom;
+      continue;
+    }
+
     const style = resolveTextStyle(block, options);
     doc.fontSize(style.fontSize).fillColor(style.color);
     const paragraphs = block.text.split(/\r?\n/u);
@@ -111,7 +173,9 @@ export async function createPdf(options: RtlPdfOptions): Promise<Uint8Array> {
     for (let paragraphIndex = 0; paragraphIndex < paragraphs.length; paragraphIndex++) {
       const paragraph = paragraphs[paragraphIndex]!;
       const lines = wrapText(doc, paragraph, availableWidth(), style.direction);
-      for (const line of lines.length > 0 ? lines : [""]) {
+      const renderedLines = lines.length > 0 ? lines : [""];
+      for (let lineIndex = 0; lineIndex < renderedLines.length; lineIndex++) {
+        const line = renderedLines[lineIndex]!;
         ensureSpace(style.lineHeight);
         if (line.length > 0) {
           drawLine(
@@ -122,6 +186,7 @@ export async function createPdf(options: RtlPdfOptions): Promise<Uint8Array> {
             availableWidth(),
             style.direction,
             style.align,
+            lineIndex < renderedLines.length - 1 ? `${line} ` : line,
           );
         }
         y += style.lineHeight;
@@ -135,7 +200,7 @@ export async function createPdf(options: RtlPdfOptions): Promise<Uint8Array> {
   return completed;
 }
 
-function resolveTextStyle(block: TextBlock, options: RtlPdfOptions) {
+function resolveTextStyle(block: TextBlock | ListBlock, options: RtlPdfOptions) {
   const fontSize = block.fontSize ?? options.defaults?.fontSize ?? 12;
   const multiplier = block.lineHeight ?? options.defaults?.lineHeight ?? 1.45;
   return {
@@ -219,6 +284,7 @@ function drawLine(
   width: number,
   direction: Direction,
   align: Alignment,
+  actualText = text,
 ) {
   const runs = createVisualRuns(text, direction);
   const measured = runs.map<MeasuredRun>((run) => {
@@ -241,7 +307,7 @@ function drawLine(
     x += run.width;
   }
 
-  doc.markContent("Span", { actual: text });
+  doc.markContent("Span", { actual: actualText });
   for (const run of measured
     .filter((run) => !run.whitespace)
     .sort((a, b) => a.start - b.start)) {
@@ -282,11 +348,39 @@ function validateOptions(options: RtlPdfOptions) {
 
 function validateBlock(block: DocumentBlock) {
   if (!block || typeof block !== "object") throw new TypeError("every block must be an object");
-  if (!["text", "spacer", "rule"].includes(block.type)) {
+  if (!["text", "list", "spacer", "rule"].includes(block.type)) {
     throw new TypeError(`unsupported block type: ${String((block as { type?: unknown }).type)}`);
   }
   if (block.type === "text" && typeof block.text !== "string") {
     throw new TypeError("text blocks require a text string");
+  }
+  if (
+    block.type === "list" &&
+    (!Array.isArray(block.items) || block.items.some((item) => typeof item !== "string"))
+  ) {
+    throw new TypeError("list blocks require an array of strings");
+  }
+  if (
+    block.type === "list" &&
+    block.ordered &&
+    block.start !== undefined &&
+    (!Number.isSafeInteger(block.start) || block.start < 0)
+  ) {
+    throw new RangeError("ordered list start must be a non-negative safe integer");
+  }
+  if (
+    block.type === "list" &&
+    block.indent !== undefined &&
+    (!Number.isFinite(block.indent) || block.indent <= 0)
+  ) {
+    throw new RangeError("list indent must be a positive number");
+  }
+  if (
+    block.type === "list" &&
+    block.markerGap !== undefined &&
+    (!Number.isFinite(block.markerGap) || block.markerGap < 0)
+  ) {
+    throw new RangeError("list markerGap must be a non-negative number");
   }
   if (block.type === "spacer" && (!Number.isFinite(block.height) || block.height < 0)) {
     throw new RangeError("spacer height must be a non-negative number");

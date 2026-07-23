@@ -1,6 +1,6 @@
 {
   "name": "rtl-pdf",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Standards-based RTL and mixed-direction PDF generation for JavaScript",
   "homepage": "https://github.com/aland-omed/rtl-pdf#readme",
   "bugs": "https://github.com/aland-omed/rtl-pdf/issues",

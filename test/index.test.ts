@@ -79,11 +79,54 @@ describe("createPdf", () => {
     expect(source.match(/\/Type\s*\/Page\b/gu)?.length ?? 0).toBeGreaterThan(1);
   });
 
+  it("renders direction-aware ordered and unordered lists with logical text", async () => {
+    const rtlItem = "یەکەم خاڵ کۆدی AB-42 و ژمارەی 123 لەخۆدەگرێت.";
+    const ltrItem = "Second item contains کوردی text.";
+    const bytes = await createPdf({
+      fonts: { rtl: rtlFont, ltr: ltrFont },
+      compress: false,
+      page: { size: [320, 260], margins: { top: 24, right: 24, bottom: 24, left: 24 } },
+      blocks: [
+        {
+          type: "list",
+          ordered: true,
+          start: 3,
+          items: [rtlItem, ltrItem],
+          fontSize: 13,
+        },
+        {
+          type: "list",
+          items: ["خاڵێکی بێ ژمارە"],
+          direction: "rtl",
+        },
+      ],
+    });
+
+    const actualText = readActualText(Buffer.from(bytes));
+    expect(actualText).toContain("3.");
+    expect(actualText).toContain("4.");
+    expect(actualText).toContain("•");
+    expect(actualText.join("")).toContain(rtlItem);
+    expect(actualText.join("")).toContain(ltrItem);
+  });
+
   it("validates required inputs", async () => {
     await expect(createPdf({ fonts: {} as never, blocks: [] })).rejects.toThrow("fonts.rtl");
     await expect(
       createPdf({ fonts: { rtl: rtlFont }, blocks: [{ type: "spacer", height: -1 }] }),
     ).rejects.toThrow("spacer height");
+    await expect(
+      createPdf({
+        fonts: { rtl: rtlFont },
+        blocks: [{ type: "list", items: [42] as never }],
+      }),
+    ).rejects.toThrow("array of strings");
+    await expect(
+      createPdf({
+        fonts: { rtl: rtlFont },
+        blocks: [{ type: "list", items: ["item"], indent: 10, markerGap: 10 }],
+      }),
+    ).rejects.toThrow("markerGap");
   });
 });
 

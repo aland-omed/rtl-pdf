@@ -48,6 +48,18 @@ const pdf = await createPdf({
       direction: "rtl",
       fontSize: 15,
     },
+    {
+      type: "list",
+      ordered: true,
+      direction: "rtl",
+      fontSize: 13,
+      color: "#334155",
+      items: [
+        "پشکنینی زانیارییەکانی داواکاری AB-42",
+        "دڵنیابوونەوە لە نرخی 123.45 دۆلار",
+        "ناردنی بەڵگەنامەکە بۆ customer@example.com",
+      ],
+    },
     { type: "spacer", height: 12 },
     {
       type: "text",

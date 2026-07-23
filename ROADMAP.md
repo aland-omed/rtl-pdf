@@ -13,7 +13,7 @@
 
 ## 0.2 - Document primitives
 
-- [ ] Ordered and unordered lists
+- [x] Ordered and unordered lists
 - [ ] RTL tables with repeating headers
 - [ ] Images, links, and annotations
 - [ ] Headers, footers, and page numbers

@@ -20,6 +20,23 @@ export interface TextBlock {
   marginBottom?: number;
 }
 
+export interface ListBlock {
+  type: "list";
+  items: string[];
+  ordered?: boolean;
+  /** First number for ordered lists. Default: 1. */
+  start?: number;
+  direction?: Direction;
+  align?: Alignment;
+  fontSize?: number;
+  lineHeight?: number;
+  color?: string;
+  marginBottom?: number;
+  /** Space reserved for the marker and its gap. */
+  indent?: number;
+  markerGap?: number;
+}
+
 export interface SpacerBlock {
   type: "spacer";
   height: number;
@@ -33,7 +50,7 @@ export interface RuleBlock {
   marginBottom?: number;
 }
 
-export type DocumentBlock = TextBlock | SpacerBlock | RuleBlock;
+export type DocumentBlock = TextBlock | ListBlock | SpacerBlock | RuleBlock;
 
 export interface PageMargins {
   top: number;
